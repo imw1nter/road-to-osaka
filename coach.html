@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Coach | Road to Osaka</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="container">
+      <a href="index.html" class="logo">Road to <span>Osaka</span></a>
+      <nav>
+        <button class="nav-toggle" aria-label="Open menu" aria-expanded="false">☰</button>
+        <ul class="nav-list">
+          <li><a href="index.html">Home</a></li>
+          <li><a href="log.html">Run Log</a></li>
+          <li><a href="stats.html">Stats</a></li>
+          <li><a href="plan.html">Plan</a></li>
+          <li><a href="coach.html">AI Coach</a></li>
+          <li><a href="race.html">Race Info</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <div class="container">
+      <h1 class="page-title">AI Coach</h1>
+      <p class="page-subtitle">A weekly review of your training, written by AI.</p>
+
+      <section class="card">
+        <h2>Weekly review</h2>
+        <div class="placeholder">AI summary of your last runs appears here (Week 5)</div>
+        <p style="margin-top:12px"><button class="btn" disabled>Generate review</button></p>
+      </section>
+
+      <section class="card" style="margin-top:16px">
+        <h2>Ask the coach</h2>
+        <form class="form-grid">
+          <div class="full">
+            <label for="coach-question">Your question</label>
+            <textarea id="coach-question" rows="3" placeholder="e.g. Should I run my long run if my legs feel tired?"></textarea>
+          </div>
+          <div class="full"><button type="submit" class="btn" disabled>Ask</button></div>
+        </form>
+        <p class="stat-label" style="margin-top:10px">AI feedback is general guidance only, not medical advice.</p>
+      </section>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      &copy; <span id="year"></span> Road to Osaka &middot; Web Programming Project &middot; Afiq
+    </div>
+  </footer>
+
+  <script src="js/main.js"></script>
+</body>
+</html>

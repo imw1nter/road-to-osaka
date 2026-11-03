@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Home | Road to Osaka</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="container">
+      <a href="index.html" class="logo">Road to <span>Osaka</span></a>
+      <nav>
+        <button class="nav-toggle" aria-label="Open menu" aria-expanded="false">☰</button>
+        <ul class="nav-list">
+          <li><a href="index.html">Home</a></li>
+          <li><a href="log.html">Run Log</a></li>
+          <li><a href="stats.html">Stats</a></li>
+          <li><a href="plan.html">Plan</a></li>
+          <li><a href="coach.html">AI Coach</a></li>
+          <li><a href="race.html">Race Info</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <div class="container">
+      <section class="hero">
+        <p>Osaka Marathon &middot; Sunday 28 February 2027</p>
+        <h1>Countdown to race day</h1>
+        <div class="countdown" id="countdown">
+          <div><strong data-days>--</strong><small>days</small></div>
+          <div><strong data-hours>--</strong><small>hours</small></div>
+          <div><strong data-mins>--</strong><small>min</small></div>
+          <div><strong data-secs>--</strong><small>sec</small></div>
+        </div>
+        <a href="log.html" class="btn">+ Log a run</a>
+      </section>
+
+      <section class="grid grid-3">
+        <div class="card">
+          <p class="stat-label">This week</p>
+          <p class="stat-value">0.0 km</p>
+          <p class="stat-label">0 runs</p>
+        </div>
+        <div class="card">
+          <p class="stat-label">Average pace</p>
+          <p class="stat-value">--:-- /km</p>
+          <p class="stat-label">last 7 days</p>
+        </div>
+        <div class="card">
+          <p class="stat-label">Longest run</p>
+          <p class="stat-value">0.0 km</p>
+          <p class="stat-label">this training block</p>
+        </div>
+      </section>
+
+      <section class="grid grid-2" style="margin-top:16px">
+        <div class="card">
+          <h2>Today's running weather</h2>
+          <div class="placeholder">Weather API + Geolocation (Week 3)</div>
+        </div>
+        <div class="card">
+          <h2>Coach's note</h2>
+          <div class="placeholder">AI weekly summary (Week 5)</div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      &copy; <span id="year"></span> Road to Osaka &middot; Web Programming Project &middot; Afiq
+    </div>
+  </footer>
+
+  <script src="js/main.js"></script>
+</body>
+</html>

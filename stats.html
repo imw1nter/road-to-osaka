@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stats | Road to Osaka</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="container">
+      <a href="index.html" class="logo">Road to <span>Osaka</span></a>
+      <nav>
+        <button class="nav-toggle" aria-label="Open menu" aria-expanded="false">☰</button>
+        <ul class="nav-list">
+          <li><a href="index.html">Home</a></li>
+          <li><a href="log.html">Run Log</a></li>
+          <li><a href="stats.html">Stats</a></li>
+          <li><a href="plan.html">Plan</a></li>
+          <li><a href="coach.html">AI Coach</a></li>
+          <li><a href="race.html">Race Info</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <div class="container">
+      <h1 class="page-title">Stats</h1>
+      <p class="page-subtitle">See how your training is building up.</p>
+
+      <section class="grid grid-2">
+        <div class="card">
+          <h2>Weekly mileage</h2>
+          <div class="placeholder">Bar chart with Chart.js (Week 3)</div>
+        </div>
+        <div class="card">
+          <h2>Average pace trend</h2>
+          <div class="placeholder">Line chart with Chart.js (Week 3)</div>
+        </div>
+        <div class="card">
+          <h2>Long runs</h2>
+          <div class="placeholder">Long-run distance over time (Week 3)</div>
+        </div>
+        <div class="card">
+          <h2>Personal bests</h2>
+          <table>
+            <tr><th>Distance</th><th>Best time</th></tr>
+            <tr><td>5K</td><td>--</td></tr>
+            <tr><td>10K</td><td>--</td></tr>
+            <tr><td>Half marathon</td><td>--</td></tr>
+            <tr><td>Marathon</td><td>--</td></tr>
+          </table>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      &copy; <span id="year"></span> Road to Osaka &middot; Web Programming Project &middot; Afiq
+    </div>
+  </footer>
+
+  <script src="js/main.js"></script>
+</body>
+</html>
