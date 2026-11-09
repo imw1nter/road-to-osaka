@@ -41,18 +41,18 @@
       <section class="grid grid-3">
         <div class="card">
           <p class="stat-label">This week</p>
-          <p class="stat-value">0.0 km</p>
-          <p class="stat-label">0 runs</p>
+          <p class="stat-value" id="week-distance">0.0 km</p>
+          <p class="stat-label" id="week-count">0 runs</p>
         </div>
         <div class="card">
           <p class="stat-label">Average pace</p>
-          <p class="stat-value">--:-- /km</p>
+          <p class="stat-value" id="avg-pace">--:-- /km</p>
           <p class="stat-label">last 7 days</p>
         </div>
         <div class="card">
           <p class="stat-label">Longest run</p>
-          <p class="stat-value">0.0 km</p>
-          <p class="stat-label">this training block</p>
+          <p class="stat-value" id="longest-run">0.0 km</p>
+          <p class="stat-label" id="longest-date">this training block</p>
         </div>
       </section>
 
@@ -75,6 +75,8 @@
     </div>
   </footer>
 
+  <script src="js/runs.js"></script>
   <script src="js/main.js"></script>
+  <script src="js/home.js"></script>
 </body>
 </html>

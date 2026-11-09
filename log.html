@@ -30,8 +30,8 @@
       <p class="page-subtitle">Record every run on the road to Osaka.</p>
 
       <section class="card">
-        <h2>Add a run</h2>
-        <form id="run-form" class="form-grid">
+        <h2 id="form-title">Add a run</h2>
+        <form id="run-form" class="form-grid" novalidate>
           <div>
             <label for="run-date">Date</label>
             <input type="date" id="run-date" required>
@@ -48,41 +48,59 @@
           </div>
           <div>
             <label for="run-distance">Distance (km)</label>
-            <input type="number" id="run-distance" min="0" step="0.01" placeholder="10.0" required>
+            <input type="number" id="run-distance" min="0.1" max="200" step="0.01" placeholder="10.0" required>
           </div>
           <div>
-            <label for="run-time">Time (hh:mm:ss)</label>
-            <input type="text" id="run-time" placeholder="00:55:00" pattern="\d{1,2}:\d{2}:\d{2}" required>
+            <label for="run-time">Time (h:mm:ss or mm:ss)</label>
+            <input type="text" id="run-time" placeholder="55:00" inputmode="numeric" required>
           </div>
           <div>
-            <label for="run-effort">Effort (1–10)</label>
+            <label for="run-effort">Effort: <span id="effort-value">5</span> / 10</label>
             <input type="range" id="run-effort" min="1" max="10" value="5">
           </div>
           <div>
-            <label>Pace</label>
-            <input type="text" id="run-pace" value="--:-- /km" readonly>
+            <label for="run-pace">Pace</label>
+            <input type="text" id="run-pace" value="--:-- /km" readonly tabindex="-1">
           </div>
           <div class="full">
             <label for="run-notes">Notes</label>
-            <textarea id="run-notes" rows="2" placeholder="How did it feel?"></textarea>
+            <textarea id="run-notes" rows="2" maxlength="300" placeholder="How did it feel?"></textarea>
           </div>
-          <div class="full">
-            <button type="submit" class="btn">Save run</button>
+          <p id="form-error" class="form-error full" role="alert" hidden></p>
+          <div class="full form-actions">
+            <button type="submit" class="btn" id="submit-btn">Save run</button>
+            <button type="button" class="btn btn-outline" id="cancel-btn" hidden>Cancel</button>
           </div>
         </form>
       </section>
 
       <section class="card" style="margin-top:16px">
-        <h2>Past runs</h2>
-        <table>
-          <thead>
-            <tr><th>Date</th><th>Type</th><th>Distance</th><th>Time</th><th>Pace</th><th>Effort</th></tr>
-          </thead>
-          <tbody id="run-list">
-            <tr><td colspan="6" class="stat-label">No runs yet. Saving runs is added in Week 2.</td></tr>
-          </tbody>
-        </table>
+        <div class="list-header">
+          <h2>Past runs</h2>
+          <div class="list-tools">
+            <label for="filter-type" class="sr-only">Filter by type</label>
+            <select id="filter-type">
+              <option value="All">All types</option>
+              <option>Easy</option>
+              <option>Long run</option>
+              <option>Tempo</option>
+              <option>Intervals</option>
+              <option>Race</option>
+            </select>
+          </div>
+        </div>
+        <p id="run-summary" class="stat-label"></p>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Date</th><th>Type</th><th>Distance</th><th>Time</th><th>Pace</th><th>Effort</th><th>Notes</th><th></th></tr>
+            </thead>
+            <tbody id="run-list"></tbody>
+          </table>
+        </div>
       </section>
+
+      <div id="toast" class="toast" role="status" aria-live="polite"></div>
     </div>
   </main>
 
@@ -92,6 +110,8 @@
     </div>
   </footer>
 
+  <script src="js/runs.js"></script>
   <script src="js/main.js"></script>
+  <script src="js/log.js"></script>
 </body>
 </html>
