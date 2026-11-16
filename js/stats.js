@@ -36,6 +36,7 @@ function setChartDefaults() {
   Chart.defaults.color = COLORS.muted;
   Chart.defaults.plugins.legend.display = false;
   Chart.defaults.maintainAspectRatio = false;
+  let charts = []; // current Chart objects, so they can be destroyed and redrawn
 }
 
 // ---------- Totals ----------
@@ -76,7 +77,7 @@ function weeklyMileage(runs, weeks = 12) {
 
 function drawWeeklyChart(runs) {
   const { labels, totals } = weeklyMileage(runs);
-  new Chart(document.getElementById("weekly-chart"), {
+  charts.push(new Chart(document.getElementById("weekly-chart"), {
     type: "bar",
     data: {
       labels,
@@ -96,7 +97,7 @@ function drawWeeklyChart(runs) {
         tooltip: { callbacks: { title: (items) => "Week of " + items[0].label, label: (item) => item.raw + " km" } },
       },
     },
-  });
+  }));
 }
 
 // ---------- Chart 2: pace trend (last 20 runs) ----------
@@ -106,7 +107,7 @@ function drawPaceChart(runs) {
   const labels = recent.map((r) => shortDate(toLocalDate(r.date)));
   const paces = recent.map((r) => Math.round(paceOf(r)));
 
-  new Chart(document.getElementById("pace-chart"), {
+  charts.push(new Chart(document.getElementById("pace-chart"), {
     type: "line",
     data: {
       labels,
@@ -150,7 +151,7 @@ function drawPaceChart(runs) {
         },
       },
     },
-  });
+  }));
 }
 
 // ---------- Chart 3: long runs ----------
@@ -161,12 +162,23 @@ function drawLongChart(runs) {
     .sort((a, b) => a.date.localeCompare(b.date));
 
   const canvas = document.getElementById("long-chart");
+  const box = canvas.parentElement;
+  let empty = box.querySelector(".placeholder");
+
   if (longRuns.length === 0) {
-    canvas.parentElement.innerHTML = '<div class="placeholder">No long runs yet. Runs of 15 km or more will appear here.</div>';
+    canvas.hidden = true;
+    if (!empty) {
+      empty = document.createElement("div");
+      empty.className = "placeholder";
+      empty.textContent = "No long runs yet. Runs of 15 km or more will appear here.";
+      box.append(empty);
+    }
     return;
   }
+  canvas.hidden = false;
+  if (empty) empty.remove();
 
-  new Chart(canvas, {
+  charts.push(new Chart(canvas, {
     type: "line",
     data: {
       labels: longRuns.map((r) => shortDate(toLocalDate(r.date))),
@@ -202,7 +214,7 @@ function drawLongChart(runs) {
         },
       },
     },
-  });
+  }));
 }
 
 // ---------- Personal bests ----------
@@ -241,26 +253,32 @@ function renderPersonalBests(runs) {
 
 // ---------- Start ----------
 
-function initStats() {
+function renderStats() {
   const runs = loadRuns();
   renderTotals(runs);
   renderPersonalBests(runs);
+  document.getElementById("stats-empty").hidden = runs.length > 0;
 
-  if (runs.length === 0) {
-    document.getElementById("stats-empty").hidden = false;
-  }
+  if (typeof Chart === "undefined") return;
 
-  if (typeof Chart === "undefined") {
-    document.querySelectorAll(".chart-box").forEach((box) => {
-      box.innerHTML = '<div class="placeholder">Charts could not be loaded. Check your internet connection.</div>';
-    });
-    return;
-  }
-
-  setChartDefaults();
+  charts.forEach((c) => c.destroy());
+  charts = [];
   drawWeeklyChart(runs);
   drawPaceChart(runs);
   drawLongChart(runs);
 }
 
+function initStats() {
+  if (typeof Chart === "undefined") {
+    document.querySelectorAll(".chart-box").forEach((box) => {
+      box.innerHTML = '<div class="placeholder">Charts could not be loaded. Check your internet connection.</div>';
+    });
+  } else {
+    setChartDefaults();
+  }
+  renderStats();
+}
+
 document.addEventListener("DOMContentLoaded", initStats);
+// Re-draw when runs change from the cloud (sign-in, another device)
+window.addEventListener("runs-changed", renderStats);

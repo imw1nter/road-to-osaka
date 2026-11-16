@@ -22,7 +22,11 @@ function renderHomeStats() {
     const longest = runs.reduce((best, r) => (r.distance > best.distance ? r : best));
     document.getElementById("longest-run").textContent = longest.distance.toFixed(1) + " km";
     document.getElementById("longest-date").textContent = formatDate(longest.date);
+  } else {
+      document.getElementById("longest-run").textContent = "0.0 km";
+      document.getElementById("longest-date").textContent = "no runs yet";
   }
 }
 
 document.addEventListener("DOMContentLoaded", renderHomeStats);
+window.addEventListener("runs-changed", renderHomeStats);

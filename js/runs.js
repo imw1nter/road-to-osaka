@@ -1,8 +1,22 @@
 // ===== Road to Osaka – run data (shared by every page) =====
-// Runs are saved in the browser with localStorage.
-// In Week 4 these functions will be switched to Firebase.
+// Runs are always kept in localStorage so pages can read them instantly
+// and the app works offline. When the user is signed in, js/firebase.js
+// sets window.cloudSync and every change is also saved to Firestore.
 
 const STORAGE_KEY = "rto-runs";
+
+// ---------- Cloud hooks (set by firebase.js when signed in) ----------
+function cloudSave(run) {
+  if (window.cloudSync) {
+    window.cloudSync.save(run).catch((err) => console.error("Cloud save failed:", err));
+  }
+}
+
+function cloudRemove(id) {
+  if (window.cloudSync) {
+    window.cloudSync.remove(id).catch((err) => console.error("Cloud delete failed:", err));
+  }
+}
 
 // ---------- Load / save ----------
 function loadRuns() {
@@ -25,16 +39,20 @@ function addRun(run) {
   run.createdAt = new Date().toISOString();
   runs.push(run);
   saveRuns(runs);
+  cloudSave(run);
   return run;
 }
 
 function updateRun(id, changes) {
   const runs = loadRuns().map((r) => (r.id === id ? { ...r, ...changes } : r));
   saveRuns(runs);
+  const updated = runs.find((r) => r.id === id);
+  if (updated) cloudSave(updated);
 }
 
 function deleteRun(id) {
   saveRuns(loadRuns().filter((r) => r.id !== id));
+  cloudRemove(id);
 }
 
 // Newest first
