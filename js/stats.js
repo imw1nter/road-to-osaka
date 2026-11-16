@@ -30,13 +30,14 @@ function paceLabel(sec) {
   return formatPace(sec).replace(" /km", "");
 }
 
+let charts = []; // current Chart objects, so they can be destroyed and redrawn
+
 // Shared Chart.js look
 function setChartDefaults() {
   Chart.defaults.font.family = getComputedStyle(document.body).fontFamily;
   Chart.defaults.color = COLORS.muted;
   Chart.defaults.plugins.legend.display = false;
   Chart.defaults.maintainAspectRatio = false;
-  let charts = []; // current Chart objects, so they can be destroyed and redrawn
 }
 
 // ---------- Totals ----------
