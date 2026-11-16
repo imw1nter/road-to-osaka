@@ -119,39 +119,44 @@ if (!configured) {
     const runsRef = collection(db, "users", user.uid, "runs");
     const owner = localStorage.getItem(OWNER_KEY);
 
-    // First sign-in on this device: upload runs that were saved as a guest
+    // From now on, every add / edit / delete in runs.js is also sent to Firestore
+    window.cloudSync = {
+      save: (run) => setDoc(doc(runsRef, run.id), run),
+      remove: (id) => deleteDoc(doc(runsRef, id)),
+    };
+    console.info("Cloud sync on for", user.email);
+
+    // First sign-in on this device: upload runs that were saved as a guest.
+    // Not awaited: Firestore queues the writes and sends them when it can reach the server.
     if (!owner) {
       const localRuns = loadRuns();
-      try {
-        for (let i = 0; i < localRuns.length; i += 400) {
-          const batch = writeBatch(db); // a batch can hold up to 500 writes
-          localRuns.slice(i, i + 400).forEach((run) => batch.set(doc(runsRef, run.id), run));
-          await batch.commit();
-        }
-        if (localRuns.length) notify(`${localRuns.length} run${localRuns.length > 1 ? "s" : ""} uploaded to your account`);
-      } catch (err) {
-        console.error("Upload of local runs failed:", err);
-        notify("Could not upload your saved runs. They are still on this device.");
-        return;
+      for (let i = 0; i < localRuns.length; i += 400) {
+        const batch = writeBatch(db); // a batch can hold up to 500 writes
+        localRuns.slice(i, i + 400).forEach((run) => batch.set(doc(runsRef, run.id), run));
+        batch.commit()
+          .then(() => console.info(`Uploaded ${Math.min(400, localRuns.length - i)} local runs`))
+          .catch((err) => {
+            console.error("Upload of local runs failed:", err);
+            notify("Could not upload your saved runs. They are still on this device.");
+          });
       }
+      if (localRuns.length) notify(`Uploading ${localRuns.length} run${localRuns.length > 1 ? "s" : ""} to your account…`);
     } else if (owner !== user.uid) {
       // Local runs belong to a different account – don't mix them in
       saveRuns([]);
     }
     localStorage.setItem(OWNER_KEY, user.uid);
 
-    // From now on, every add / edit / delete in runs.js is also sent to Firestore
-    window.cloudSync = {
-      save: (run) => setDoc(doc(runsRef, run.id), run),
-      remove: (id) => deleteDoc(doc(runsRef, id)),
-    };
-
     // Live updates: the local copy always matches the cloud (also changes from other devices)
     stopListening = onSnapshot(
       runsRef,
+      { includeMetadataChanges: true },
       (snapshot) => {
         saveRuns(snapshot.docs.map((d) => d.data()));
         runsChanged();
+        const { fromCache, hasPendingWrites } = snapshot.metadata;
+        console.info(`Sync: ${snapshot.size} runs`, fromCache ? "(from device cache – server not reached yet)" : "(confirmed by server)",
+          hasPendingWrites ? "– changes waiting to upload" : "");
       },
       (err) => {
         console.error("Sync error:", err);
