@@ -29,27 +29,51 @@
       <h1 class="page-title">Stats</h1>
       <p class="page-subtitle">See how your training is building up.</p>
 
-      <section class="grid grid-2">
+      <section class="grid grid-4" id="totals">
         <div class="card">
-          <h2>Weekly mileage</h2>
-          <div class="placeholder">Bar chart with Chart.js (Week 3)</div>
+          <p class="stat-label">Total distance</p>
+          <p class="stat-value" id="total-distance">0 km</p>
         </div>
         <div class="card">
-          <h2>Average pace trend</h2>
-          <div class="placeholder">Line chart with Chart.js (Week 3)</div>
+          <p class="stat-label">Total runs</p>
+          <p class="stat-value" id="total-runs">0</p>
+        </div>
+        <div class="card">
+          <p class="stat-label">Total time</p>
+          <p class="stat-value" id="total-time">0:00</p>
+        </div>
+        <div class="card">
+          <p class="stat-label">Average pace</p>
+          <p class="stat-value" id="total-pace">--:-- /km</p>
+        </div>
+      </section>
+
+      <div id="stats-empty" class="card" style="margin-top:16px" hidden>
+        <div class="placeholder">No runs yet. <a href="log.html" class="link">Log your first run</a> to see your charts.</div>
+      </div>
+
+      <section class="grid grid-2" id="stats-charts" style="margin-top:16px">
+        <div class="card">
+          <h2>Weekly mileage</h2>
+          <p class="chart-note">Last 12 weeks (Monday to Sunday)</p>
+          <div class="chart-box"><canvas id="weekly-chart" aria-label="Weekly mileage bar chart" role="img"></canvas></div>
+        </div>
+        <div class="card">
+          <h2>Pace trend</h2>
+          <p class="chart-note">Last 20 runs · dashed line = marathon goal pace</p>
+          <div class="chart-box"><canvas id="pace-chart" aria-label="Pace trend line chart" role="img"></canvas></div>
         </div>
         <div class="card">
           <h2>Long runs</h2>
-          <div class="placeholder">Long-run distance over time (Week 3)</div>
+          <p class="chart-note">Runs of 15 km or more, and every run marked "Long run"</p>
+          <div class="chart-box"><canvas id="long-chart" aria-label="Long run distance chart" role="img"></canvas></div>
         </div>
         <div class="card">
           <h2>Personal bests</h2>
+          <p class="chart-note">Estimated from your fastest pace on a run at least that long</p>
           <table>
-            <tr><th>Distance</th><th>Best time</th></tr>
-            <tr><td>5K</td><td>--</td></tr>
-            <tr><td>10K</td><td>--</td></tr>
-            <tr><td>Half marathon</td><td>--</td></tr>
-            <tr><td>Marathon</td><td>--</td></tr>
+            <thead><tr><th>Distance</th><th>Best time</th><th>Pace</th><th>From run</th></tr></thead>
+            <tbody id="pb-list"></tbody>
           </table>
         </div>
       </section>
@@ -62,6 +86,9 @@
     </div>
   </footer>
 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <script src="js/runs.js"></script>
   <script src="js/main.js"></script>
+  <script src="js/stats.js"></script>
 </body>
 </html>

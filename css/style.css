@@ -267,3 +267,32 @@ tr.editing { background: #fff6ed; }
   position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
   overflow: hidden; clip: rect(0, 0, 0, 0); border: 0;
 }
+
+/* ===== Week 3: stats and weather ===== */
+.grid-4 { grid-template-columns: repeat(4, 1fr); }
+.chart-note { color: var(--muted); font-size: 0.85rem; margin: -6px 0 10px; }
+.chart-box { position: relative; height: 240px; }
+.link { color: var(--primary); font-weight: 600; text-decoration: underline; }
+
+.weather-main { display: flex; align-items: center; gap: 14px; }
+.weather-icon { font-size: 2.6rem; line-height: 1; }
+.weather-temp { font-size: 1.9rem; font-weight: 800; }
+.weather-desc { color: var(--muted); font-size: 0.9rem; }
+.weather-details {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin: 14px 0 12px;
+  font-size: 0.85rem;
+}
+.weather-details div { background: var(--bg); border-radius: 8px; padding: 6px 8px; }
+.weather-details strong { display: block; font-size: 0.95rem; }
+.run-rating { border-radius: 10px; padding: 8px 12px; font-size: 0.9rem; font-weight: 600; }
+.run-rating.good { background: #ecfdf3; color: #027a48; }
+.run-rating.ok { background: #fffaeb; color: #b54708; }
+.run-rating.bad { background: #fef3f2; color: #b42318; }
+.weather-source { color: var(--muted); font-size: 0.8rem; margin-top: 8px; }
+
+@media (max-width: 1000px) {
+  .grid-4 { grid-template-columns: repeat(2, 1fr); }
+}
