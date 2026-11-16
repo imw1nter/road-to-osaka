@@ -73,6 +73,7 @@ if (!configured) {
   const db = initializeFirestore(app, {
     // Keeps a copy in the browser so the app works offline and syncs later
     localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }),
+    experimentalForceLongPolling: true,
   });
 
   let stopListening = null;
