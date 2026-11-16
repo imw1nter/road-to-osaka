@@ -51,6 +51,8 @@ function renderAuthButton(user) {
     const img = document.createElement("img");
     img.src = user.photoURL;
     img.alt = "";
+    img.width = 24;
+    img.height = 24;
     img.referrerPolicy = "no-referrer";
     authBtn.append(img);
   }
