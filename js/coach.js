@@ -1,252 +1,208 @@
-// ===== Road to Osaka – AI Coach (coach page + coach's note on the home page) =====
-// Sends a summary of your training to the serverless function in api/coach.js,
-// which asks the AI and sends the answer back. The AI key never reaches the browser.
+// ===== Road to Osaka – AI coach (Vercel serverless function) =====
+// POST /api/coach   Authorization: Bearer <Firebase ID token>
+// Body: { mode: "review" | "ask", question?, context }
+// The Gemini API key stays here on the server (Vercel environment variable GEMINI_API_KEY).
 
-// Change this to your own Vercel address
-const COACH_URL = "https://road-to-osaka.vercel.app/api/coach";
-const REVIEW_KEY = "rto-coach-review";
+import { createRemoteJWKSet, jwtVerify } from "jose";
 
-let signedIn = false;
+const PROJECT_ID = process.env.FIREBASE_PROJECT_ID || "road-to-osaka";
+// Models to try in order (fastest first). If one is busy or slow, the next one is used.
+// "Thinking" is switched off for the 2.5 models so answers come back in a few seconds.
+const MODELS = [
+  process.env.GEMINI_MODEL || "gemini-2.5-flash",
+  "gemini-2.5-flash-lite",
+  "gemini-flash-latest",
+].filter((m, i, all) => all.indexOf(m) === i);
+const TIMEOUT_MS = 15000; // give up on one model after 15 seconds
+const ALLOWED_ORIGINS = [
+  "https://imw1nter.github.io",
+  "http://127.0.0.1:5500",
+  "http://localhost:5500",
+];
 
-// ---------- Data sent to the coach ----------
+// Google's public keys for checking Firebase sign-in tokens
+const FIREBASE_KEYS = createRemoteJWKSet(
+  new URL("https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com")
+);
 
-function buildCoachContext() {
-  const runs = loadRuns();
-  const plan = applyRuns(buildPlan(), runs);
-  const week = plan[currentWeekIndex(plan)];
-  const daysLeft = Math.max(0, Math.ceil((RACE_DATE - new Date()) / 86400000));
+// Simple limit: 10 requests per user per 10 minutes (per server instance)
+const LIMIT = 10;
+const WINDOW_MS = 10 * 60 * 1000;
+const recentCalls = new Map();
 
-  // Distance for each of the last 6 weeks (Monday to Sunday)
-  const weeklyKm = [];
-  const thisMonday = startOfWeek();
-  for (let i = 5; i >= 0; i--) {
-    const start = addDays(thisMonday, -7 * i);
-    const end = addDays(start, 7);
-    const km = runs
-      .filter((r) => toLocalDate(r.date) >= start && toLocalDate(r.date) < end)
-      .reduce((sum, r) => sum + r.distance, 0);
-    weeklyKm.push({ week: dateString(start), km: Math.round(km * 10) / 10 });
+const SYSTEM_PROMPT = `You are a friendly, experienced marathon running coach inside the "Road to Osaka" training app.
+The runner is preparing for the Osaka Marathon on 28 February 2027 with a goal time of 3:30:00.
+You receive their goal, this week's training plan with what was completed, weekly distances and recent runs as JSON.
+Rules:
+- Base every comment on the data. Mention real numbers (km, paces, dates) when useful. Do not invent runs.
+- Be encouraging but honest. Keep advice practical and specific to the next 7 days.
+- Paces are in min:sec per km. Distances in km.
+- If notes mention pain or injury, advise rest and seeing a doctor or physiotherapist; do not diagnose.
+- Plain text only. You may use short "- " bullet lines and **bold** for a few key words. No headings, no tables.`;
+
+function setCors(req, res) {
+  const origin = req.headers.origin;
+  if (ALLOWED_ORIGINS.includes(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Vary", "Origin");
   }
+  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  return ALLOWED_ORIGINS.includes(origin);
+}
+
+function rateLimited(uid) {
+  const now = Date.now();
+  const calls = (recentCalls.get(uid) || []).filter((t) => now - t < WINDOW_MS);
+  if (calls.length >= LIMIT) return true;
+  calls.push(now);
+  recentCalls.set(uid, calls);
+  return false;
+}
+
+// Keep only the fields we expect, with size limits
+function cleanContext(ctx) {
+  if (!ctx || typeof ctx !== "object") return null;
+  const text = (v, max = 60) => String(v ?? "").slice(0, max);
+  const num = (v) => (Number.isFinite(Number(v)) ? Number(v) : 0);
+  const list = (v, max) => (Array.isArray(v) ? v.slice(0, max) : []);
 
   return {
-    goal: { time: formatTime(GOAL_TIME), marathonPace: formatPace(GOAL_PACE), raceDate: "2027-02-28", daysLeft },
-    today: todayString(),
+    goal: { time: text(ctx.goal?.time), marathonPace: text(ctx.goal?.marathonPace), raceDate: text(ctx.goal?.raceDate), daysLeft: num(ctx.goal?.daysLeft) },
+    today: text(ctx.today, 10),
     planWeek: {
-      number: week.number,
-      phase: week.phase,
-      plannedKm: Math.round(week.plannedKm),
-      doneKm: week.doneKm,
-      sessions: week.sessions.map((s) => ({
-        day: s.day, date: s.date, title: s.title, pace: s.pace || "", status: s.status, loggedKm: s.loggedKm,
+      number: num(ctx.planWeek?.number),
+      phase: text(ctx.planWeek?.phase),
+      plannedKm: num(ctx.planWeek?.plannedKm),
+      doneKm: num(ctx.planWeek?.doneKm),
+      sessions: list(ctx.planWeek?.sessions, 7).map((s) => ({
+        day: text(s.day, 3), date: text(s.date, 10), title: text(s.title), pace: text(s.pace, 12),
+        status: text(s.status, 10), loggedKm: num(s.loggedKm),
       })),
     },
-    weeklyKm,
-    recentRuns: sortRuns(runs).slice(0, 14).map((r) => ({
-      date: r.date, type: r.type, km: r.distance, time: formatTime(r.seconds),
-      pace: formatPace(paceOf(r)), effort: r.effort, notes: r.notes,
+    weeklyKm: list(ctx.weeklyKm, 8).map((w) => ({ week: text(w.week, 10), km: num(w.km) })),
+    recentRuns: list(ctx.recentRuns, 20).map((r) => ({
+      date: text(r.date, 10), type: text(r.type, 12), km: num(r.km), time: text(r.time, 10),
+      pace: text(r.pace, 12), effort: num(r.effort), notes: text(r.notes, 120),
     })),
   };
 }
 
-async function askCoach(mode, question = "") {
-  if (!window.getIdToken) throw new Error("Sign-in is not ready yet. Please wait a moment.");
-  const token = await window.getIdToken();
-  if (!token) throw new Error("Please sign in to use the AI coach.");
+export default async function handler(req, res) {
+  const allowed = setCors(req, res);
+  if (req.method === "OPTIONS") return res.status(204).end();
+  if (req.method !== "POST") return res.status(405).json({ error: "Use POST." });
+  if (!allowed) return res.status(403).json({ error: "This website is not allowed to use the coach." });
 
-  const response = await fetch(COACH_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
-    body: JSON.stringify({ mode, question, context: buildCoachContext() }),
-  });
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data.error || "The coach is not available right now.");
-  return data.text;
-}
+  if (!process.env.GEMINI_API_KEY) {
+    return res.status(500).json({ error: "The server is missing its AI API key." });
+  }
 
-// ---------- Showing the AI's text safely ----------
-// Turns "- " lines into a list and **text** into bold, using textContent only (no innerHTML).
-
-function addInline(parent, line) {
-  line.split(/(\*\*[^*]+\*\*)/g).forEach((part) => {
-    if (part.startsWith("**") && part.endsWith("**")) parent.append(Object.assign(document.createElement("strong"), { textContent: part.slice(2, -2) }));
-    else if (part) parent.append(part);
-  });
-}
-
-function renderCoachText(box, text) {
-  box.replaceChildren();
-  let list = null;
-  text.split("\n").forEach((raw) => {
-    const line = raw.trim();
-    if (!line) { list = null; return; }
-    const bullet = line.match(/^[-*•]\s+(.*)/);
-    if (bullet) {
-      if (!list) { list = document.createElement("ul"); box.append(list); }
-      const li = document.createElement("li");
-      addInline(li, bullet[1]);
-      list.append(li);
-    } else {
-      list = null;
-      const p = document.createElement("p");
-      addInline(p, line.replace(/^#+\s*/, ""));
-      box.append(p);
-    }
-  });
-}
-
-function loadSavedReview() {
+  // 1. Only signed-in users of this Firebase project
+  let uid;
   try {
-    return JSON.parse(localStorage.getItem(REVIEW_KEY));
-  } catch {
-    return null;
-  }
-}
-
-function reviewDateLabel(saved) {
-  return "Written " + new Date(saved.savedAt).toLocaleString("en-GB", {
-    weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit",
-  });
-}
-
-// ---------- Coach page ----------
-
-function setupCoachPage() {
-  const reviewBox = document.getElementById("review-text");
-  if (!reviewBox) return;
-
-  const reviewBtn = document.getElementById("review-btn");
-  const reviewMeta = document.getElementById("review-meta");
-  const signinNote = document.getElementById("coach-signin");
-  const form = document.getElementById("ask-form");
-  const questionInput = document.getElementById("coach-question");
-  const askBtn = document.getElementById("ask-btn");
-  const chat = document.getElementById("chat");
-
-  const saved = loadSavedReview();
-  if (saved) {
-    renderCoachText(reviewBox, saved.text);
-    reviewMeta.textContent = reviewDateLabel(saved);
-    reviewBtn.textContent = "Update review";
-  }
-
-  const updateButtons = () => {
-    reviewBtn.disabled = !signedIn;
-    askBtn.disabled = !signedIn;
-    signinNote.hidden = signedIn;
-  };
-  updateButtons();
-  window.addEventListener("auth-changed", (e) => {
-    signedIn = e.detail.signedIn;
-    updateButtons();
-  });
-
-  reviewBtn.addEventListener("click", async () => {
-    reviewBtn.disabled = true;
-    reviewBtn.textContent = "Thinking…";
-    reviewBox.classList.add("loading");
-    try {
-      const text = await askCoach("review");
-      const entry = { text, savedAt: Date.now() };
-      localStorage.setItem(REVIEW_KEY, JSON.stringify(entry));
-      renderCoachText(reviewBox, text);
-      reviewMeta.textContent = reviewDateLabel(entry);
-    } catch (err) {
-      reviewMeta.textContent = err.message;
-    } finally {
-      reviewBox.classList.remove("loading");
-      reviewBtn.textContent = "Update review";
-      reviewBtn.disabled = !signedIn;
-    }
-  });
-
-  form.addEventListener("submit", async (event) => {
-    event.preventDefault();
-    const question = questionInput.value.trim();
-    if (!question) return;
-
-    const q = document.createElement("div");
-    q.className = "chat-q";
-    q.textContent = question;
-    const a = document.createElement("div");
-    a.className = "chat-a loading";
-    a.textContent = "Thinking…";
-    chat.append(q, a);
-    questionInput.value = "";
-    askBtn.disabled = true;
-
-    try {
-      renderCoachText(a, await askCoach("ask", question));
-    } catch (err) {
-      a.textContent = err.message;
-      a.classList.add("chat-error");
-    } finally {
-      a.classList.remove("loading");
-      askBtn.disabled = !signedIn;
-      a.scrollIntoView({ behavior: "smooth", block: "nearest" });
-    }
-  });
-
-  // Quick question buttons
-  document.querySelectorAll("[data-question]").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      questionInput.value = btn.dataset.question;
-      questionInput.focus();
+    const token = (req.headers.authorization || "").replace(/^Bearer\s+/i, "");
+    const { payload } = await jwtVerify(token, FIREBASE_KEYS, {
+      issuer: `https://securetoken.google.com/${PROJECT_ID}`,
+      audience: PROJECT_ID,
     });
-  });
+    uid = payload.sub;
+  } catch (err) {
+    return res.status(401).json({ error: "Please sign in again to use the coach." });
+  }
+
+  if (rateLimited(uid)) {
+    return res.status(429).json({ error: "Too many requests. Please wait a few minutes." });
+  }
+
+  // 2. Check the request body
+  let body = req.body;
+  if (typeof body === "string") {
+    try { body = JSON.parse(body); } catch { body = null; }
+  }
+  const mode = body?.mode;
+  const question = String(body?.question || "").trim().slice(0, 300);
+  const context = cleanContext(body?.context);
+
+  if (!["review", "ask"].includes(mode) || !context) {
+    return res.status(400).json({ error: "Invalid request." });
+  }
+  if (mode === "ask" && !question) {
+    return res.status(400).json({ error: "Please type a question." });
+  }
+
+  const task = mode === "review"
+    ? `Write my weekly training review in about 120–170 words:
+1) how this week is going compared with the plan (one or two sentences),
+2) 2–3 bullet points of what to focus on in the next 7 days,
+3) one short motivating sentence about Osaka.`
+    : `Answer my question in at most 120 words, using my data where it helps.
+Question: ${question}`;
+
+  const prompt = `${task}\n\nMy training data (JSON):\n${JSON.stringify(context)}`;
+
+  // 3. Ask Gemini (with fallback models when one is busy)
+  const result = await askGemini(prompt);
+  if (result.text) return res.status(200).json({ text: result.text });
+  return res.status(result.status).json({ error: result.error });
 }
 
-// ---------- Home page: today's session + latest coach note ----------
+async function askGemini(prompt) {
+  let lastStatus = 502;
 
-function setupHomeNote() {
-  const box = document.getElementById("coach-note");
-  if (!box) return;
+  for (const model of MODELS) {
+    const generationConfig = { temperature: 0.6, maxOutputTokens: 1024 };
+    if (model.startsWith("gemini-2.5")) generationConfig.thinkingConfig = { thinkingBudget: 0 };
 
-  const render = () => {
-    box.replaceChildren();
-    const plan = applyRuns(buildPlan(), loadRuns());
-    const today = todaysSession(plan);
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+    const started = Date.now();
 
-    const todayBox = document.createElement("div");
-    todayBox.className = "today-session";
-    const label = document.createElement("p");
-    label.className = "stat-label";
-    label.textContent = "Today's plan";
-    const title = document.createElement("p");
-    title.className = "today-title";
-    title.textContent = today ? today.title + (today.status === "done" ? " ✓" : "") : "No session planned";
-    const detail = document.createElement("p");
-    detail.className = "stat-label";
-    detail.textContent = today && today.pace ? `${today.detail} · ${today.pace}` : today ? today.detail : "";
-    todayBox.append(label, title, detail);
-    box.append(todayBox);
+    try {
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+        {
+          method: "POST",
+          signal: controller.signal,
+          headers: { "Content-Type": "application/json", "x-goog-api-key": process.env.GEMINI_API_KEY },
+          body: JSON.stringify({
+            systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+            contents: [{ role: "user", parts: [{ text: prompt }] }],
+            generationConfig,
+          }),
+        }
+      );
 
-    const saved = loadSavedReview();
-    const note = document.createElement("div");
-    note.className = "coach-note-text";
-    if (saved) {
-      renderCoachText(note, saved.text.split("\n").filter((l) => l.trim())[0] || saved.text);
-      const more = document.createElement("a");
-      more.href = "coach.html";
-      more.className = "link";
-      more.textContent = "Read the full review →";
-      note.append(more);
-    } else {
-      const p = document.createElement("p");
-      p.className = "stat-label";
-      p.textContent = "No AI review yet. ";
-      const link = document.createElement("a");
-      link.href = "coach.html";
-      link.className = "link";
-      link.textContent = "Ask your coach";
-      p.append(link);
-      note.append(p);
+      if (response.ok) {
+        const data = await response.json();
+        const text = (data.candidates?.[0]?.content?.parts || [])
+          .filter((p) => !p.thought)
+          .map((p) => p.text || "")
+          .join("")
+          .trim();
+        console.log(`${model} answered in ${Date.now() - started} ms`);
+        if (text) return { text };
+        console.error("Empty reply from", model, JSON.stringify(data).slice(0, 500));
+        lastStatus = 502;
+      } else {
+        lastStatus = response.status;
+        console.error("Gemini error", model, response.status, (await response.text()).slice(0, 500));
+        // 401 / 403 = wrong key: trying another model will not help
+        if ([401, 403].includes(response.status)) break;
+      }
+    } catch (err) {
+      lastStatus = err.name === "AbortError" ? 503 : 502;
+      console.error(err.name === "AbortError" ? `${model} took too long` : "Could not reach Gemini:", err.message);
+    } finally {
+      clearTimeout(timer);
     }
-    box.append(note);
+  }
+
+  const busy = lastStatus === 429 || lastStatus === 503;
+  return {
+    status: busy ? 503 : 502,
+    error: busy
+      ? "The AI coach is very busy right now. Please try again in a minute."
+      : "The AI service is not available right now.",
   };
-
-  render();
-  window.addEventListener("runs-changed", render);
 }
-
-setupCoachPage();
-setupHomeNote();
