@@ -322,3 +322,80 @@ nav { display: flex; align-items: center; gap: 10px; }
   .nav-toggle { order: 3; }
   .auth-btn { padding: 5px 10px; font-size: 0.85rem; }
 }
+
+/* ===== Week 5: training plan ===== */
+.progress { height: 8px; background: var(--bg); border-radius: 999px; overflow: hidden; margin-top: 8px; }
+.progress-bar { height: 100%; width: 0; background: var(--primary); border-radius: 999px; transition: width 0.3s; }
+
+.plan-table { min-width: 560px; }
+.plan-table td { vertical-align: top; }
+.plan-day { white-space: nowrap; }
+.plan-title { font-weight: 600; }
+.plan-detail { color: var(--muted); font-size: 0.85rem; }
+.plan-pace { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.plan-status { text-align: right; white-space: nowrap; }
+tr.status-rest { color: var(--muted); }
+tr.status-today { background: #fff6ed; }
+
+.status-badge { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 0.8rem; font-weight: 600; }
+.status-badge.done { background: #ecfdf3; color: #027a48; }
+.status-badge.short { background: #fffaeb; color: #b54708; }
+.status-badge.missed { background: #fef3f2; color: #b42318; }
+.status-badge.today { background: var(--primary); color: #fff; }
+
+.plan-week { border: 1px solid var(--border); border-radius: 10px; margin-bottom: 8px; padding: 0 12px; }
+.plan-week summary { cursor: pointer; padding: 10px 0; display: flex; gap: 6px; align-items: baseline; flex-wrap: wrap; }
+.plan-week summary .plan-week-km { margin-left: auto; font-weight: 600; font-size: 0.9rem; }
+.plan-week.current { border-color: var(--primary); }
+.plan-week[open] summary { border-bottom: 1px solid var(--border); margin-bottom: 4px; }
+
+/* ===== Week 5: AI coach ===== */
+.signin-note {
+  background: #eff4ff;
+  color: var(--accent);
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin-bottom: 16px;
+  font-size: 0.9rem;
+}
+.coach-text p, .chat-a p, .coach-note-text p { margin-bottom: 8px; }
+.coach-text ul, .chat-a ul, .coach-note-text ul { padding-left: 20px; margin-bottom: 8px; }
+.coach-text li, .chat-a li { margin-bottom: 4px; }
+.loading { opacity: 0.55; }
+
+.chat { display: flex; flex-direction: column; gap: 8px; max-height: 360px; overflow-y: auto; margin-bottom: 10px; }
+.chat-q {
+  align-self: flex-end;
+  background: var(--primary);
+  color: #fff;
+  padding: 8px 12px;
+  border-radius: 14px 14px 4px 14px;
+  max-width: 85%;
+}
+.chat-a {
+  align-self: flex-start;
+  background: var(--bg);
+  padding: 10px 12px;
+  border-radius: 14px 14px 14px 4px;
+  max-width: 95%;
+  font-size: 0.95rem;
+}
+.chat-a p:last-child, .chat-a ul:last-child { margin-bottom: 0; }
+.chat-error { color: #b42318; }
+
+.quick-questions { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.chip {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 5px 12px;
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+  color: var(--text);
+}
+.chip:hover { border-color: var(--primary); color: var(--primary); }
+
+.today-session { background: var(--bg); border-radius: 10px; padding: 10px 12px; margin-bottom: 12px; }
+.today-title { font-weight: 700; font-size: 1.05rem; }
+.coach-note-text { font-size: 0.95rem; }

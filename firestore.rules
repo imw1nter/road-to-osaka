@@ -1,0 +1,28 @@
+rules_version = '2';
+
+// Road to Osaka – Firestore security rules
+// Each user can only read and write their own runs, and every run must be valid.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+
+    function isValidRun(run, runId) {
+      return run.keys().hasAll(["id", "date", "type", "distance", "seconds", "effort", "notes", "createdAt"])
+        && run.id == runId
+        && run.date is string && run.date.size() == 10
+        && run.type in ["Easy", "Long run", "Tempo", "Intervals", "Race"]
+        && run.distance is number && run.distance > 0 && run.distance <= 200
+        && run.seconds is int && run.seconds > 0
+        && run.effort is int && run.effort >= 1 && run.effort <= 10
+        && run.notes is string && run.notes.size() <= 300;
+    }
+
+    match /users/{userId}/runs/{runId} {
+      allow read, delete: if isOwner(userId);
+      allow create, update: if isOwner(userId) && isValidRun(request.resource.data, runId);
+    }
+  }
+}

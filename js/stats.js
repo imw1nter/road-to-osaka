@@ -1,7 +1,6 @@
 // ===== Road to Osaka – Stats page (charts with Chart.js) =====
 
-const GOAL_TIME = 3 * 3600 + 30 * 60;             // marathon goal: 3:30:00
-const GOAL_PACE = GOAL_TIME / 42.195;              // ≈ 4:59 /km
+// GOAL_TIME and GOAL_PACE come from runs.js
 
 const COLORS = {
   primary: "#e4572e",

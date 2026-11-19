@@ -20,7 +20,7 @@ HTML, CSS, JavaScript, DOM, Web APIs (Fetch, Geolocation, Canvas, localStorage),
 ## Progress
 - [x] Week 1 – Page structure, layout and navigation
 - [x] Week 2 – Run log (form, list, pace, localStorage)
-- [x] Week 3 – Charts, countdown, weather API
-- [x] Week 4 – Firebase login and storage
-- [ ] Week 5 – AI coach and training plan
+- [x] Week 3 – Charts, personal bests, weather API
+- [x] Week 4 – Firebase login and cloud sync
+- [x] Week 5 – AI coach (Gemini via Vercel function) and training plan
 - [ ] Week 6 – Testing, polish, final report

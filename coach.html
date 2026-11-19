@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AI Coach | Road to Osaka</title>
-  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/style.css?v=8">
 </head>
 <body>
   <header class="site-header">
@@ -28,25 +28,41 @@
   <main>
     <div class="container">
       <h1 class="page-title">AI Coach</h1>
-      <p class="page-subtitle">A weekly review of your training, written by AI.</p>
+      <p class="page-subtitle">A weekly review of your training and answers to your questions, written by AI from your runs and plan.</p>
 
-      <section class="card">
-        <h2>Weekly review</h2>
-        <div class="placeholder">AI summary of your last runs appears here (Week 5)</div>
-        <p style="margin-top:12px"><button class="btn" disabled>Generate review</button></p>
-      </section>
+      <p id="coach-signin" class="signin-note">Sign in (top right) to use the AI coach. Your runs and plan are sent securely so the coach can give personal advice.</p>
 
-      <section class="card" style="margin-top:16px">
-        <h2>Ask the coach</h2>
-        <form class="form-grid">
-          <div class="full">
-            <label for="coach-question">Your question</label>
-            <textarea id="coach-question" rows="3" placeholder="e.g. Should I run my long run if my legs feel tired?"></textarea>
+      <section class="grid grid-2">
+        <div class="card">
+          <h2>Weekly review</h2>
+          <div id="review-text" class="coach-text">
+            <p class="stat-label">No review yet. Click the button to get feedback on this week's training.</p>
           </div>
-          <div class="full"><button type="submit" class="btn" disabled>Ask</button></div>
-        </form>
-        <p class="stat-label" style="margin-top:10px">AI feedback is general guidance only, not medical advice.</p>
+          <div class="form-actions" style="margin-top:14px;align-items:center">
+            <button class="btn" id="review-btn" type="button" disabled>Get my review</button>
+            <span id="review-meta" class="stat-label"></span>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>Ask the coach</h2>
+          <div id="chat" class="chat"></div>
+          <div class="quick-questions">
+            <button type="button" class="chip" data-question="Am I on track for 3:30?">Am I on track for 3:30?</button>
+            <button type="button" class="chip" data-question="My legs feel tired. Should I still do my long run?">Tired legs – long run?</button>
+            <button type="button" class="chip" data-question="What should I eat and drink during my long runs?">Fuelling on long runs</button>
+          </div>
+          <form id="ask-form" class="form-grid">
+            <div class="full">
+              <label for="coach-question" class="sr-only">Your question</label>
+              <textarea id="coach-question" rows="2" maxlength="300" placeholder="Ask anything about your training…"></textarea>
+            </div>
+            <div class="full"><button type="submit" class="btn" id="ask-btn" disabled>Ask</button></div>
+          </form>
+        </div>
       </section>
+
+      <p class="stat-label" style="margin-top:14px">AI feedback is general guidance only, not medical advice. If something hurts, rest and see a doctor or physiotherapist.</p>
     </div>
   </main>
 
@@ -56,8 +72,10 @@
     </div>
   </footer>
 
-  <script src="js/runs.js"></script>
-  <script src="js/main.js"></script>
-  <script type="module" src="js/firebase.js"></script>
+  <script src="js/runs.js?v=8"></script>
+  <script src="js/main.js?v=8"></script>
+  <script src="js/training-plan.js?v=8"></script>
+  <script src="js/coach.js?v=8"></script>
+  <script type="module" src="js/firebase.js?v=8"></script>
 </body>
 </html>

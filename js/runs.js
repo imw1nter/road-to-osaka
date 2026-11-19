@@ -5,6 +5,10 @@
 
 const STORAGE_KEY = "rto-runs";
 
+// Marathon goal (used by the Stats, Plan and AI Coach pages)
+const GOAL_TIME = 3 * 3600 + 30 * 60;   // 3:30:00
+const GOAL_PACE = GOAL_TIME / 42.195;   // ≈ 4:59 /km
+
 // ---------- Cloud hooks (set by firebase.js when signed in) ----------
 function cloudSave(run) {
   if (window.cloudSync) {

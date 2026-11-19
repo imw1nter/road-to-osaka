@@ -205,6 +205,7 @@ function renderRuns() {
 }
 
 filterType.addEventListener("change", renderRuns);
+
 // Re-draw when runs change from the cloud (sign-in, another device)
 window.addEventListener("runs-changed", renderRuns);
 

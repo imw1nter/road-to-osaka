@@ -1,0 +1,9 @@
+{
+  "name": "road-to-osaka",
+  "private": true,
+  "type": "module",
+  "description": "Road to Osaka – marathon training hub. The static site is on GitHub Pages; api/coach.js runs on Vercel.",
+  "dependencies": {
+    "jose": "^5.9.6"
+  }
+}

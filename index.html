@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Home | Road to Osaka</title>
-  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/style.css?v=8">
 </head>
 <body>
   <header class="site-header">
@@ -53,7 +53,7 @@
         <div class="card">
           <p class="stat-label">Longest run</p>
           <p class="stat-value" id="longest-run">0.0 km</p>
-          <p class="stat-label" id="longest-date">this training block</p>
+          <p class="stat-label" id="longest-date">no runs yet</p>
         </div>
       </section>
 
@@ -61,12 +61,12 @@
         <div class="card">
           <h2>Today's running weather</h2>
           <div id="weather" class="weather">
-            <p class="stat-label">Loading waether...</p>
+            <p class="stat-label">Loading weather…</p>
           </div>
         </div>
         <div class="card">
           <h2>Coach's note</h2>
-          <div class="placeholder">AI weekly summary (Week 5)</div>
+          <div id="coach-note"></div>
         </div>
       </section>
     </div>
@@ -78,10 +78,12 @@
     </div>
   </footer>
 
-  <script src="js/runs.js"></script>
-  <script src="js/main.js"></script>
-  <script src="js/home.js"></script>
-  <script src="js/weather.js"></script>
-  <script type="module" src="js/firebase.js"></script>
+  <script src="js/runs.js?v=8"></script>
+  <script src="js/main.js?v=8"></script>
+  <script src="js/home.js?v=8"></script>
+  <script src="js/weather.js?v=8"></script>
+  <script src="js/training-plan.js?v=8"></script>
+  <script src="js/coach.js?v=8"></script>
+  <script type="module" src="js/firebase.js?v=8"></script>
 </body>
 </html>
