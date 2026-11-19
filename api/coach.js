@@ -6,7 +6,12 @@
 import { createRemoteJWKSet, jwtVerify } from "jose";
 
 const PROJECT_ID = process.env.FIREBASE_PROJECT_ID || "road-to-osaka";
-const MODEL = process.env.GEMINI_MODEL || "gemini-flash-latest";
+// Models to try in order. If one is overloaded (503), the next one is used.
+const MODELS = [
+  process.env.GEMINI_MODEL || "gemini-flash-latest",
+  "gemini-2.5-flash",
+  "gemini-2.5-flash-lite",
+].filter((m, i, all) => all.indexOf(m) === i);
 const ALLOWED_ORIGINS = [
   "https://imw1nter.github.io",
   "http://127.0.0.1:5500",
@@ -134,39 +139,58 @@ Question: ${question}`;
 
   const prompt = `${task}\n\nMy training data (JSON):\n${JSON.stringify(context)}`;
 
-  // 3. Ask Gemini
-  try {
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "x-goog-api-key": process.env.GEMINI_API_KEY },
-        body: JSON.stringify({
-          systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
-          contents: [{ role: "user", parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.6, maxOutputTokens: 2048 },
-        }),
+  // 3. Ask Gemini (with fallback models when one is busy)
+  const result = await askGemini(prompt);
+  if (result.text) return res.status(200).json({ text: result.text });
+  return res.status(result.status).json({ error: result.error });
+}
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+async function askGemini(prompt) {
+  let lastStatus = 502;
+
+  for (const model of MODELS) {
+    try {
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "x-goog-api-key": process.env.GEMINI_API_KEY },
+          body: JSON.stringify({
+            systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+            contents: [{ role: "user", parts: [{ text: prompt }] }],
+            generationConfig: { temperature: 0.6, maxOutputTokens: 2048 },
+          }),
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        const text = (data.candidates?.[0]?.content?.parts || [])
+          .map((p) => p.text || "")
+          .join("")
+          .trim();
+        if (text) return { text };
+        console.error("Empty reply from", model, JSON.stringify(data).slice(0, 500));
+        lastStatus = 502;
+      } else {
+        lastStatus = response.status;
+        console.error("Gemini error", model, response.status, (await response.text()).slice(0, 500));
+        // 400 / 401 / 403 = wrong key or request: trying another model will not help
+        if ([400, 401, 403].includes(response.status)) break;
       }
-    );
-
-    if (!response.ok) {
-      console.error("Gemini error", response.status, await response.text());
-      const busy = response.status === 429;
-      return res.status(busy ? 429 : 502).json({
-        error: busy ? "The AI service is busy. Try again in a minute." : "The AI service is not available right now.",
-      });
+    } catch (err) {
+      console.error("Could not reach Gemini:", err);
     }
-
-    const data = await response.json();
-    const text = (data.candidates?.[0]?.content?.parts || [])
-      .map((p) => p.text || "")
-      .join("")
-      .trim();
-
-    if (!text) return res.status(502).json({ error: "The coach did not reply. Please try again." });
-    return res.status(200).json({ text });
-  } catch (err) {
-    console.error(err);
-    return res.status(502).json({ error: "Could not reach the AI service." });
+    await sleep(800); // short pause before trying the next model
   }
+
+  const busy = lastStatus === 429 || lastStatus === 503;
+  return {
+    status: busy ? 503 : 502,
+    error: busy
+      ? "The AI coach is very busy right now. Please try again in a minute."
+      : "The AI service is not available right now.",
+  };
 }
