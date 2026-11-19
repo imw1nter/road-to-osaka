@@ -20,6 +20,22 @@ service cloud.firestore {
         && run.notes is string && run.notes.size() <= 300;
     }
 
+    function isValidSettings(s) {
+      return s.goalTime is int && s.goalTime >= 7200 && s.goalTime <= 28800
+        && s.raceDate is string && s.raceDate.size() == 10
+        && s.planStart is string && s.planStart.size() == 10
+        && s.runDays is list && s.runDays.size() >= 3 && s.runDays.size() <= 6
+        && s.longRunDay is int
+        && s.overrides is map
+        && s.updatedAt is number;
+    }
+
+    // Goal, paces, weekly structure, edited sessions and imported plan
+    match /users/{userId}/profile/{docId} {
+      allow read: if isOwner(userId);
+      allow write: if isOwner(userId) && docId == "settings" && isValidSettings(request.resource.data);
+    }
+
     match /users/{userId}/runs/{runId} {
       allow read, delete: if isOwner(userId);
       allow create, update: if isOwner(userId) && isValidRun(request.resource.data, runId);

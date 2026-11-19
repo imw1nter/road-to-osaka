@@ -16,6 +16,7 @@ import {
 
 const OWNER_KEY = "rto-owner";     // uid of the account the local runs belong to
 const PENDING_KEY = "rto-pending"; // runs saved/deleted locally but not yet confirmed by the server
+const SETTINGS_PENDING_KEY = "rto-settings-pending"; // settings changed here but not yet in the cloud
 const authBtn = document.getElementById("auth-btn");
 
 // ---------- Small helpers ----------
@@ -103,6 +104,7 @@ if (!configured) {
   });
 
   let stopListening = null;
+  let stopSettings = null;
 
   // Sign in / sign out button
   authBtn.addEventListener("click", async () => {
@@ -118,7 +120,10 @@ if (!configured) {
         saveRuns([]);
         localStorage.removeItem(OWNER_KEY);
         localStorage.removeItem(PENDING_KEY);
+        localStorage.removeItem(SETTINGS_KEY);
+        localStorage.removeItem(SETTINGS_PENDING_KEY);
         runsChanged();
+        window.dispatchEvent(new Event("settings-changed"));
         notify("Signed out");
       } else {
         await signInWithPopup(auth, new GoogleAuthProvider());
@@ -147,6 +152,10 @@ if (!configured) {
       stopListening();
       stopListening = null;
     }
+    if (stopSettings) {
+      stopSettings();
+      stopSettings = null;
+    }
     if (!user) {
       window.cloudSync = null;
       return;
@@ -155,13 +164,18 @@ if (!configured) {
     const runsRef = collection(db, "users", user.uid, "runs");
     const owner = localStorage.getItem(OWNER_KEY);
 
+    const settingsRef = doc(db, "users", user.uid, "profile", "settings");
+
     if (!owner) {
       // First sign-in on this device: every run saved as a guest needs uploading
       loadRuns().forEach((run) => setPending("saves", run.id, true));
+      if (localStorage.getItem(SETTINGS_KEY)) localStorage.setItem(SETTINGS_PENDING_KEY, "1");
     } else if (owner !== user.uid) {
-      // Local runs belong to a different account – don't mix them in
+      // Local runs and settings belong to a different account – don't mix them in
       saveRuns([]);
       localStorage.removeItem(PENDING_KEY);
+      localStorage.removeItem(SETTINGS_KEY);
+      localStorage.removeItem(SETTINGS_PENDING_KEY);
     }
     localStorage.setItem(OWNER_KEY, user.uid);
 
@@ -177,6 +191,10 @@ if (!configured) {
         setPending("saves", id, false);
         setPending("deletes", id, true);
         return deleteDoc(doc(runsRef, id)).then(() => setPending("deletes", id, false));
+      },
+      saveSettings(settings) {
+        localStorage.setItem(SETTINGS_PENDING_KEY, "1");
+        return setDoc(settingsRef, settings).then(() => localStorage.removeItem(SETTINGS_PENDING_KEY));
       },
     };
     console.info("Cloud sync on for", user.email);
@@ -197,6 +215,29 @@ if (!configured) {
       console.info(`Uploading ${waiting} change(s) that were not in the cloud yet`);
       notify(`Syncing ${waiting} change${waiting > 1 ? "s" : ""} with your account…`);
     }
+
+    // Settings (goal, paces, weekly structure, edits, own plan): the newest version wins
+    stopSettings = onSnapshot(
+      settingsRef,
+      (snapshot) => {
+        const local = loadSettings();
+        const localPending = localStorage.getItem(SETTINGS_PENDING_KEY);
+        if (!snapshot.exists()) {
+          // Nothing in the cloud yet – upload what this device has
+          if (localStorage.getItem(SETTINGS_KEY)) window.cloudSync.saveSettings(local).catch((err) => console.error(err));
+          return;
+        }
+        const server = snapshot.data();
+        if (localPending && (local.updatedAt || 0) > (server.updatedAt || 0)) {
+          window.cloudSync.saveSettings(local).catch((err) => console.error("Settings upload failed:", err));
+        } else if ((server.updatedAt || 0) !== (local.updatedAt || 0)) {
+          localStorage.removeItem(SETTINGS_PENDING_KEY);
+          saveSettings(server, { fromCloud: true });
+          console.info("Settings loaded from the cloud");
+        }
+      },
+      (err) => console.error("Settings sync error:", err)
+    );
 
     // Live updates from the server. Local changes that are still pending win,
     // so a run is never lost while it is on its way to the cloud.

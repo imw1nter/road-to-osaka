@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Training Plan | Road to Osaka</title>
-  <link rel="stylesheet" href="css/style.css?v=8">
+  <link rel="stylesheet" href="css/style.css?v=9">
 </head>
 <body>
   <header class="site-header">
@@ -27,8 +27,13 @@
 
   <main>
     <div class="container">
-      <h1 class="page-title">Training Plan</h1>
-      <p class="page-subtitle">15 weeks to the Osaka Marathon on 28 February 2027 · goal 3:30:00. Sessions are ticked off automatically when you log a run that day.</p>
+      <div class="page-head">
+        <div>
+          <h1 class="page-title">Training Plan</h1>
+          <p class="page-subtitle" id="plan-subtitle">Sessions are ticked off automatically when you log a run that day.</p>
+        </div>
+        <button type="button" class="btn" id="customize-btn">⚙ Customize plan</button>
+      </div>
 
       <section class="grid grid-3">
         <div class="card">
@@ -50,6 +55,7 @@
 
       <section class="card" style="margin-top:16px">
         <h2 id="this-week-title">This week</h2>
+        <p class="chart-note">Click <b>Edit</b> on any session to change it.</p>
         <div id="this-week"></div>
       </section>
 
@@ -61,13 +67,107 @@
         </div>
         <div class="card">
           <h2>Pace guide</h2>
-          <p class="chart-note">Based on your 3:30:00 marathon goal</p>
+          <p class="chart-note" id="pace-note"></p>
           <table>
             <thead><tr><th>Run</th><th>Pace</th><th>Feel</th></tr></thead>
             <tbody id="pace-guide"></tbody>
           </table>
         </div>
       </section>
+
+      <!-- Customize plan -->
+      <dialog id="settings-dialog" class="dialog">
+        <form id="settings-form" method="dialog">
+          <div class="dialog-head">
+            <h2>Customize your plan</h2>
+            <button type="button" class="icon-btn" data-close>✕</button>
+          </div>
+
+          <h3>Goal and dates</h3>
+          <div class="form-grid">
+            <div>
+              <label for="set-goal">Marathon goal time (h:mm:ss)</label>
+              <input id="set-goal" type="text" placeholder="3:30:00" required>
+            </div>
+            <div>
+              <label for="set-race">Race date</label>
+              <input id="set-race" type="date" required>
+            </div>
+            <div>
+              <label for="set-start">Plan starts (week of)</label>
+              <input id="set-start" type="date" required>
+            </div>
+          </div>
+
+          <h3>Paces</h3>
+          <p class="stat-label">Leave a box empty to use the pace from your goal (shown in grey). Type a range like <code>6:10-6:50</code> or one pace like <code>5:00</code>.</p>
+          <div class="form-grid" id="pace-inputs"></div>
+
+          <h3>Weekly structure</h3>
+          <p class="stat-label">Which days do you run? (3–6 days)</p>
+          <div class="day-picker" id="run-days"></div>
+          <div class="form-grid" style="margin-top:10px">
+            <div>
+              <label for="set-long">Long run day</label>
+              <select id="set-long"></select>
+            </div>
+          </div>
+
+          <h3>Your own plan</h3>
+          <p class="stat-label" id="own-plan-status"></p>
+          <div class="form-actions">
+            <label class="btn btn-outline file-btn">Import CSV<input type="file" id="csv-file" accept=".csv,text/csv" hidden></label>
+            <button type="button" class="btn btn-outline" id="csv-template">Download template</button>
+            <button type="button" class="btn btn-outline" id="use-generated" hidden>Use the generated plan</button>
+          </div>
+          <div id="csv-result" class="csv-result" hidden></div>
+
+          <h3>Edited sessions</h3>
+          <div class="form-actions" style="align-items:center">
+            <span class="stat-label" id="edit-count"></span>
+            <button type="button" class="btn btn-outline" id="reset-edits">Undo all edits</button>
+          </div>
+
+          <p id="settings-error" class="form-error" hidden></p>
+          <div class="dialog-actions">
+            <button type="button" class="btn btn-outline" id="reset-settings">Reset to defaults</button>
+            <button type="submit" class="btn">Save</button>
+          </div>
+        </form>
+      </dialog>
+
+      <!-- Edit one session -->
+      <dialog id="edit-dialog" class="dialog dialog-small">
+        <form id="edit-form" method="dialog">
+          <div class="dialog-head">
+            <h2 id="edit-title">Edit session</h2>
+            <button type="button" class="icon-btn" data-close>✕</button>
+          </div>
+          <div class="form-grid">
+            <div>
+              <label for="edit-type">Type</label>
+              <select id="edit-type"></select>
+            </div>
+            <div>
+              <label for="edit-km">Distance (km)</label>
+              <input id="edit-km" type="number" min="0" max="100" step="0.1">
+            </div>
+            <div class="full">
+              <label for="edit-pace">Pace (optional)</label>
+              <input id="edit-pace" type="text" placeholder="6:00-6:40">
+            </div>
+            <div class="full">
+              <label for="edit-detail">Notes</label>
+              <textarea id="edit-detail" rows="2" maxlength="200"></textarea>
+            </div>
+          </div>
+          <p id="edit-error" class="form-error" hidden></p>
+          <div class="dialog-actions">
+            <button type="button" class="btn btn-outline" id="edit-reset">Back to planned</button>
+            <button type="submit" class="btn">Save</button>
+          </div>
+        </form>
+      </dialog>
     </div>
   </main>
 
@@ -77,10 +177,11 @@
     </div>
   </footer>
 
-  <script src="js/runs.js?v=8"></script>
-  <script src="js/main.js?v=8"></script>
-  <script src="js/training-plan.js?v=8"></script>
-  <script src="js/plan.js?v=8"></script>
-  <script type="module" src="js/firebase.js?v=8"></script>
+  <script src="js/runs.js?v=9"></script>
+  <script src="js/settings.js?v=9"></script>
+  <script src="js/main.js?v=9"></script>
+  <script src="js/training-plan.js?v=9"></script>
+  <script src="js/plan.js?v=9"></script>
+  <script type="module" src="js/firebase.js?v=9"></script>
 </body>
 </html>

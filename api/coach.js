@@ -28,7 +28,7 @@ const WINDOW_MS = 10 * 60 * 1000;
 const recentCalls = new Map();
 
 const SYSTEM_PROMPT = `You are a friendly, experienced marathon running coach inside the "Road to Osaka" training app.
-The runner is preparing for the Osaka Marathon on 28 February 2027 with a goal time of 3:30:00.
+The runner is preparing for the Osaka Marathon. Their goal time, race date and days left are in the "goal" part of the data.
 You receive their goal, this week's training plan with what was completed, weekly distances and recent runs as JSON.
 Rules:
 - Base every comment on the data. Mention real numbers (km, paces, dates) when useful. Do not invent runs.

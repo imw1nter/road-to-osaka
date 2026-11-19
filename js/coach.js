@@ -14,7 +14,8 @@ function buildCoachContext() {
   const runs = loadRuns();
   const plan = applyRuns(buildPlan(), runs);
   const week = plan[currentWeekIndex(plan)];
-  const daysLeft = Math.max(0, Math.ceil((RACE_DATE - new Date()) / 86400000));
+  const settings = loadSettings();
+  const daysLeft = Math.max(0, Math.ceil((raceDateTime() - new Date()) / 86400000));
 
   // Distance for each of the last 6 weeks (Monday to Sunday)
   const weeklyKm = [];
@@ -29,7 +30,7 @@ function buildCoachContext() {
   }
 
   return {
-    goal: { time: formatTime(GOAL_TIME), marathonPace: formatPace(GOAL_PACE), raceDate: "2027-02-28", daysLeft },
+    goal: { time: formatTime(settings.goalTime), marathonPace: formatPace(goalPace()), raceDate: settings.raceDate, daysLeft },
     today: todayString(),
     planWeek: {
       number: week.number,
@@ -252,6 +253,7 @@ function setupHomeNote() {
 
   render();
   window.addEventListener("runs-changed", render);
+  window.addEventListener("settings-changed", render);
 }
 
 setupCoachPage();

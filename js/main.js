@@ -1,7 +1,6 @@
 // ===== Road to Osaka – shared script =====
 
-// Osaka Marathon 2027: Sunday 28 February 2027, start 9:15 (JST)
-const RACE_DATE = new Date("2027-02-28T09:15:00+09:00");
+// The race date comes from your settings (js/settings.js) – Osaka Marathon starts at 9:15 JST
 
 // Highlight the current page in the navigation
 function setActiveNav() {
@@ -28,7 +27,7 @@ function startCountdown() {
   if (!box) return;
 
   const update = () => {
-    const diff = RACE_DATE - new Date();
+    const diff = raceDateTime() - new Date();
     if (diff <= 0) {
       box.innerHTML = "<div><strong>🏁</strong><small>Race day!</small></div>";
       return;
@@ -42,6 +41,9 @@ function startCountdown() {
     box.querySelector("[data-mins]").textContent = String(mins).padStart(2, "0");
     box.querySelector("[data-secs]").textContent = String(secs).padStart(2, "0");
   };
+
+  const label = document.getElementById("race-date-label");
+  if (label) label.textContent = `Osaka Marathon · ${formatRaceDate()}`;
 
   update();
   setInterval(update, 1000);

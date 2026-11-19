@@ -1,6 +1,6 @@
 // ===== Road to Osaka – Stats page (charts with Chart.js) =====
 
-// GOAL_TIME and GOAL_PACE come from runs.js
+// The goal pace comes from your settings (goalPace() in js/settings.js)
 
 const COLORS = {
   primary: "#e4572e",
@@ -124,7 +124,7 @@ function drawPaceChart(runs) {
         },
         {
           label: "Goal pace",
-          data: paces.map(() => Math.round(GOAL_PACE)),
+          data: paces.map(() => Math.round(goalPace())),
           borderColor: COLORS.accent,
           borderDash: [6, 6],
           borderWidth: 1.5,
@@ -282,3 +282,4 @@ function initStats() {
 document.addEventListener("DOMContentLoaded", initStats);
 // Re-draw when runs change from the cloud (sign-in, another device)
 window.addEventListener("runs-changed", renderStats);
+window.addEventListener("settings-changed", renderStats);

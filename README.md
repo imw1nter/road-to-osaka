@@ -23,4 +23,5 @@ HTML, CSS, JavaScript, DOM, Web APIs (Fetch, Geolocation, Canvas, localStorage),
 - [x] Week 3 – Charts, personal bests, weather API
 - [x] Week 4 – Firebase login and cloud sync
 - [x] Week 5 – AI coach (Gemini via Vercel function) and training plan
+- [x] Customizable plan – goal, paces, weekly structure, editable sessions, CSV import
 - [ ] Week 6 – Testing, polish, final report
