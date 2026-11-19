@@ -6,14 +6,11 @@
 import { createRemoteJWKSet, jwtVerify } from "jose";
 
 const PROJECT_ID = process.env.FIREBASE_PROJECT_ID || "road-to-osaka";
-// Models to try in order (fastest first). If one is busy or slow, the next one is used.
-// "Thinking" is switched off for the 2.5 models so answers come back in a few seconds.
-const MODELS = [
-  process.env.GEMINI_MODEL || "gemini-2.5-flash",
-  "gemini-2.5-flash-lite",
-  "gemini-flash-latest",
-].filter((m, i, all) => all.indexOf(m) === i);
+// Which Gemini models to use is worked out from the list of models your API key can use
+// (Google retires old model names, so they are not hard-coded). Fast "flash-lite" models first.
+const FALLBACK_MODELS = ["gemini-flash-lite-latest", "gemini-flash-latest"];
 const TIMEOUT_MS = 15000; // give up on one model after 15 seconds
+const MAX_MODELS = 3;     // try at most 3 models per request
 const ALLOWED_ORIGINS = [
   "https://imw1nter.github.io",
   "http://127.0.0.1:5500",
@@ -147,13 +144,56 @@ Question: ${question}`;
   return res.status(result.status).json({ error: result.error });
 }
 
+
+// ---------- Choosing a model ----------
+
+let modelCache = null; // { list, savedAt } – reused for 6 hours
+
+function rankModel(name) {
+  let score = 0;
+  if (name.endsWith("-latest")) score -= 100;      // aliases always point to a current model
+  if (name.includes("lite")) score -= 10;          // lite = fastest, least busy
+  if (name.includes("preview")) score += 20;       // previews change often
+  const version = parseFloat((name.match(/gemini-(\d+(\.\d+)?)/) || [])[1] || 0);
+  return score - version;                          // newer versions first
+}
+
+async function getModels() {
+  if (modelCache && Date.now() - modelCache.savedAt < 6 * 3600 * 1000) return modelCache.list;
+  try {
+    const response = await fetch("https://generativelanguage.googleapis.com/v1beta/models?pageSize=200", {
+      headers: { "x-goog-api-key": process.env.GEMINI_API_KEY },
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!response.ok) throw new Error("List models failed: " + response.status);
+    const data = await response.json();
+    const names = (data.models || [])
+      .filter((m) => (m.supportedGenerationMethods || []).includes("generateContent"))
+      .map((m) => m.name.replace(/^models\//, ""))
+      .filter((n) => n.startsWith("gemini") && n.includes("flash"))
+      .filter((n) => !/(image|tts|audio|live|embed|vision|exp|thinking|computer|robotics)/.test(n))
+      .sort((x, y) => rankModel(x) - rankModel(y));
+    if (!names.length) throw new Error("No flash models in the list");
+    modelCache = { list: names, savedAt: Date.now() };
+    console.log("Models available:", names.slice(0, 6).join(", "));
+    return names;
+  } catch (err) {
+    console.error("Could not list models, using defaults:", err.message);
+    return FALLBACK_MODELS;
+  }
+}
+
+// ---------- Asking Gemini ----------
+
 async function askGemini(prompt) {
   let lastStatus = 502;
+  const available = await getModels();
+  const models = [process.env.GEMINI_MODEL, ...available]
+    .filter(Boolean)
+    .filter((m, i, all) => all.indexOf(m) === i)
+    .slice(0, MAX_MODELS);
 
-  for (const model of MODELS) {
-    const generationConfig = { temperature: 0.6, maxOutputTokens: 1024 };
-    if (model.startsWith("gemini-2.5")) generationConfig.thinkingConfig = { thinkingBudget: 0 };
-
+  for (const model of models) {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
     const started = Date.now();
@@ -168,7 +208,7 @@ async function askGemini(prompt) {
           body: JSON.stringify({
             systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
             contents: [{ role: "user", parts: [{ text: prompt }] }],
-            generationConfig,
+            generationConfig: { temperature: 0.6, maxOutputTokens: 2048 },
           }),
         }
       );
@@ -186,7 +226,8 @@ async function askGemini(prompt) {
         lastStatus = 502;
       } else {
         lastStatus = response.status;
-        console.error("Gemini error", model, response.status, (await response.text()).slice(0, 500));
+        console.error("Gemini error", model, response.status, (await response.text()).slice(0, 300));
+        if (response.status === 404) modelCache = null; // model list is out of date – reload next time
         // 401 / 403 = wrong key: trying another model will not help
         if ([401, 403].includes(response.status)) break;
       }
