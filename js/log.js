@@ -101,7 +101,19 @@ form.addEventListener("submit", (event) => {
 
 cancelBtn.addEventListener("click", resetForm);
 fields.distance.addEventListener("input", updatePace);
-fields.time.addEventListener("input", updatePace);
+// Phone number pads have no ":" key, so colons are added automatically while you type digits:
+// 5500 → 55:00, 14500 → 1:45:00 (typing the colons yourself also works)
+function formatTimeDigits(text) {
+  const d = text.replace(/\D/g, "").replace(/^0+(?=\d{3})/, "").slice(0, 6);
+  if (d.length <= 2) return d;
+  if (d.length <= 4) return `${d.slice(0, -2)}:${d.slice(-2)}`;
+  return `${d.slice(0, -4)}:${d.slice(-4, -2)}:${d.slice(-2)}`;
+}
+
+fields.time.addEventListener("input", () => {
+  fields.time.value = formatTimeDigits(fields.time.value);
+  updatePace();
+});
 fields.effort.addEventListener("input", () => (effortValue.textContent = fields.effort.value));
 
 // ---------- Edit / delete ----------
