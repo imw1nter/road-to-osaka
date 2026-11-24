@@ -4,7 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Race Info | Road to Osaka</title>
-  <link rel="stylesheet" href="css/style.css?v=8">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="css/style.css?v=10">
 </head>
 <body>
   <header class="site-header">
@@ -30,40 +31,82 @@
       <h1 class="page-title">Osaka Marathon 2027</h1>
       <p class="page-subtitle">Everything you need for race day.</p>
 
-      <section class="grid grid-3">
+      <section class="grid grid-4">
         <div class="card">
           <p class="stat-label">Date</p>
           <p class="stat-value">28 Feb 2027</p>
-          <p class="stat-label">Sunday</p>
+          <p class="stat-label">Sunday · 15th edition</p>
         </div>
         <div class="card">
-          <p class="stat-label">Distance</p>
-          <p class="stat-value">42.195 km</p>
-          <p class="stat-label">Full marathon</p>
+          <p class="stat-label">Start</p>
+          <p class="stat-value">9:15</p>
+          <p class="stat-label">Wave 1, then waves 2 and 3</p>
         </div>
         <div class="card">
-          <p class="stat-label">Edition</p>
-          <p class="stat-value">15th</p>
-          <p class="stat-label">Osaka, Japan</p>
+          <p class="stat-label">Time limit</p>
+          <p class="stat-value">7 hours</p>
+          <p class="stat-label">Course closes 16:15</p>
+        </div>
+        <div class="card">
+          <p class="stat-label">Runners</p>
+          <p class="stat-value">31,970</p>
+          <p class="stat-label">in the marathon</p>
         </div>
       </section>
 
       <section class="grid grid-2" style="margin-top:16px">
         <div class="card">
           <h2>Course overview</h2>
-          <div class="placeholder">Course map and highlights</div>
+          <p class="chart-note">Starts in front of the Osaka Prefectural Government Building and finishes inside Osaka Castle Park. Certified by JAAF, World Athletics and AIMS.</p>
+          <div id="course-map" class="course-map" role="img" aria-label="Map of landmarks along the Osaka Marathon course"></div>
+          <p class="map-note">Pins show landmarks on or near the course (approximate). This is not the exact route – see the <a class="link" href="https://www.osaka-marathon.com/2027/en/" target="_blank" rel="noopener">official website</a> for the course map.</p>
         </div>
+
+        <div class="card">
+          <h2>The course, section by section</h2>
+          <ol class="course-steps">
+            <li><strong>Start · 0 km</strong><span>Osaka Prefectural Government Building, next to Osaka Castle Park. Crowded start – don't waste energy weaving.</span></li>
+            <li><strong>Okawa River → Nakanoshima · ~6 km</strong><span>Along the river into Nakanoshima, where the 7.2 km “720” race finishes.</span></li>
+            <li><strong>Midosuji · ~7–12 km</strong><span>Osaka's wide main boulevard – flat and fast. Settle into goal pace.</span></li>
+            <li><strong>Namba &amp; Dotonbori</strong><span>The route doubles back here, past the famous Glico sign. Big crowds – stay calm.</span></li>
+            <li><strong>Southern neighbourhoods · ~15–27 km</strong><span>Quieter streets heading south, past the Kyocera Dome area. Keep fuelling.</span></li>
+            <li><strong>Shitennoji &amp; Imazatosuji</strong><span>Past Shitennoji Temple, then a long, straight stretch of about 5 km on Imazatosuji.</span></li>
+            <li><strong>After 30 km</strong><span>The one real climb of the course comes just after 30 km. Ease off and keep your effort steady.</span></li>
+            <li><strong>Osaka Business Park → Finish · 42.195 km</strong><span>Final kilometres to the finish inside Osaka Castle Park.</span></li>
+          </ol>
+        </div>
+      </section>
+
+      <section class="grid grid-2" style="margin-top:16px">
+        <div class="card">
+          <h2>Your pacing plan</h2>
+          <p class="chart-note" id="split-note"></p>
+          <div class="table-wrap">
+            <table class="split-table">
+              <thead><tr><th>Point</th><th>Race time</th><th>Clock*</th><th>Tip</th></tr></thead>
+              <tbody id="split-list"></tbody>
+            </table>
+          </div>
+          <p class="map-note">* Time of day if you cross the start line at 9:15 (Wave 1). Later waves start later.</p>
+        </div>
+
         <div class="card">
           <h2>Race-day checklist</h2>
-          <ul class="checklist">
-            <li><label><input type="checkbox"> Race bib and safety pins</label></li>
-            <li><label><input type="checkbox"> Running shoes and socks</label></li>
-            <li><label><input type="checkbox"> Gels and water plan</label></li>
-            <li><label><input type="checkbox"> Watch charged</label></li>
-            <li><label><input type="checkbox"> Plan to reach the start area early</label></li>
+          <p class="chart-note">Ticks are saved on this device.</p>
+          <ul class="checklist" id="checklist">
+            <li><label><input type="checkbox" data-item="bib"> Race bib and safety pins</label></li>
+            <li><label><input type="checkbox" data-item="shoes"> Running shoes and socks (tested on long runs)</label></li>
+            <li><label><input type="checkbox" data-item="fuel"> Gels and drink plan – try them in training first</label></li>
+            <li><label><input type="checkbox" data-item="watch"> Watch charged, goal pace set</label></li>
+            <li><label><input type="checkbox" data-item="weather"> Check the weather – layers you can throw away for a cold start</label></li>
+            <li><label><input type="checkbox" data-item="breakfast"> Breakfast 3 hours before the start</label></li>
+            <li><label><input type="checkbox" data-item="early"> Plan to reach the start area early</label></li>
+            <li><label><input type="checkbox" data-item="after"> Warm clothes and transport for after the finish</label></li>
           </ul>
         </div>
       </section>
+
+      <p class="map-note" style="margin-top:14px">Race facts from the <a class="link" href="https://www.osaka-marathon.com/2027/en/info/gist" target="_blank" rel="noopener">Osaka Marathon 2027 race outline</a>. Always check the official website for the latest information.</p>
     </div>
   </main>
 
@@ -73,8 +116,11 @@
     </div>
   </footer>
 
-  <script src="js/runs.js?v=8"></script>
-  <script src="js/main.js?v=8"></script>
-  <script type="module" src="js/firebase.js?v=8"></script>
+  <script src="js/runs.js?v=9"></script>
+  <script src="js/settings.js?v=9"></script>
+  <script src="js/main.js?v=9"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="js/race.js?v=1"></script>
+  <script type="module" src="js/firebase.js?v=9"></script>
 </body>
 </html>

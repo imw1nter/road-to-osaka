@@ -455,3 +455,38 @@ tr.status-today { background: #fff6ed; }
 .csv-result { margin-top: 10px; font-size: 0.9rem; }
 .csv-result ul { padding-left: 20px; color: #b42318; }
 .import-ok { background: #ecfdf3; color: #027a48; border-radius: 8px; padding: 8px 12px; }
+
+/* ===== Race Info page ===== */
+.course-map { height: 340px; border-radius: 10px; overflow: hidden; border: 1px solid var(--border); z-index: 0; }
+.map-note { color: var(--muted); font-size: 0.8rem; margin-top: 8px; }
+.course-steps { list-style: none; counter-reset: step; }
+.course-steps li {
+  counter-increment: step;
+  position: relative;
+  padding: 0 0 12px 34px;
+  border-left: 2px solid var(--border);
+  margin-left: 11px;
+}
+.course-steps li:last-child { border-left-color: transparent; padding-bottom: 0; }
+.course-steps li::before {
+  content: counter(step);
+  position: absolute;
+  left: -12px;
+  top: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+}
+.course-steps strong { display: block; }
+.course-steps span { color: var(--muted); font-size: 0.9rem; }
+.split-table td, .split-table th { padding: 7px 8px; }
+.split-table { min-width: 460px; }
+.checklist label { display: flex; align-items: center; gap: 10px; margin: 0; font-weight: 500; cursor: pointer; }
+.checklist input { width: auto; flex: none; accent-color: var(--primary); }
+.checklist label:has(input:checked) { color: var(--muted); text-decoration: line-through; }
